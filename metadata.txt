@@ -12,8 +12,8 @@ email=arminmatzl@gmail.com
 
 about=QGis connection to the Geosphere Austria API (https://data.hub.zamg.ac.at/).
 
-tracker=https://github.com/a-matz/geosphere_api/issues
-repository=https://github.com/a-matz/geosphere_api
+tracker=https://github.com/a-matz/austria_weather_api/issues
+repository=https://github.com/a-matz/austria_weather_api
 # End of mandatory metadata
 
 # Recommended items:
@@ -25,7 +25,7 @@ hasProcessingProvider=no
 # Tags are comma separated with spaces allowed
 tags=Geosphere Austria,ZAMG,weather,Austria,API
 
-homepage=https://github.com/a-matz/geosphere_api
+homepage=https://github.com/a-matz/austria_weather_api
 category=Plugins
 icon=icon.png
 # experimental flag
