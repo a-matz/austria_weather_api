@@ -26,7 +26,7 @@ import os
 
 from qgis.PyQt import QtGui, QtWidgets, uic
 from qgis.PyQt.QtCore import Qt, QSignalBlocker, QVariant, pyqtSignal, QTranslator, QCoreApplication, QDateTime
-from qgis.PyQt.QtWidgets import QProgressBar, QDialog, QGridLayout, QProgressDialog, QMessageBox, QTableWidgetItem, QCheckBox
+from qgis.PyQt.QtWidgets import QProgressBar, QDialog, QGridLayout, QProgressDialog, QMessageBox, QTableWidgetItem, QCheckBox, QLineEdit
 import processing
 from qgis.core import (QgsMapLayerProxyModel, QgsGeometry, 
                       QgsProject, QgsFeature, QgsPoint, edit, QgsVectorLayer, QgsMeshLayer, QgsRasterLayer,
@@ -700,10 +700,10 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         
         elif self.combobox_typ.currentText() == "grid":
             coordinates = [
-                self.extent.children()[2].children()[1].children()[3].text(),#south
-                self.extent.children()[2].children()[1].children()[8].text(),#west
-                self.extent.children()[2].children()[1].children()[2].text(),#north
-                self.extent.children()[2].children()[1].children()[7].text(),#east
+                self.extent.findChildren(QLineEdit, 'mYMinLineEdit')[0].text().replace(",","."),#south
+                self.extent.findChildren(QLineEdit, 'mXMinLineEdit')[0].text().replace(",","."),#west
+                self.extent.findChildren(QLineEdit, 'mYMaxLineEdit')[0].text().replace(",","."),#north
+                self.extent.findChildren(QLineEdit, 'mXMaxLineEdit')[0].text().replace(",",".")#east
             ]
             coordinates = ",".join(coordinates)
             url = f"https://dataset.api.hub.zamg.ac.at/v1/\
@@ -764,4 +764,3 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         self.setCursor(Qt.ArrowCursor)
         self.iface.messageBar().pushSuccess(self.tr("Download finished"), f"File successfully saved in  <a href= '{os.path.dirname(path)}'> {path}  </a>")
-

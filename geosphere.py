@@ -54,7 +54,7 @@ class GeosphereAPI:
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
-            'AustriaWeatherAPI_{}.qm'.format(locale))
+            'geosphere_{}.qm'.format(locale))
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
