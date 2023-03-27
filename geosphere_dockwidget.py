@@ -240,6 +240,10 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         with QSignalBlocker(self.parameter_filter):
             self.parameter_filter.setText("")
         
+        if self.iface.mapCanvas().mapTool() != None:
+            if self.iface.mapCanvas().mapTool().toolName() == "geosphere_api_pointTool":
+                self.iface.mapCanvas().setMapTool(QgsMapToolPan(self.iface.mapCanvas()))
+
         if isinstance(self.iface.mapCanvas().mapTool(), QgsMapToolExtent):
             self.iface.mapCanvas().setMapTool(QgsMapToolPan(self.iface.mapCanvas()))
 
@@ -651,15 +655,21 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 self.iface.mapCanvas().setMapTool(QgsMapToolPan(self.iface.mapCanvas()))
     
     def delete_all_ts_points(self):
-        with edit(self.point_layer):
-            for feat in self.point_layer.getFeatures():
-                self.point_layer.deleteFeature(feat.id())
+        try:
+            with edit(self.point_layer):
+                for feat in self.point_layer.getFeatures():
+                    self.point_layer.deleteFeature(feat.id())
+        except:
+            pass
 
     def delete_selected_ts_points(self):
-        select = self.point_layer.getSelectedFeatures()
-        with edit(self.point_layer):
-            for feat in select:
-                self.point_layer.deleteFeature(feat.id())
+        try:
+            select = self.point_layer.getSelectedFeatures()
+            with edit(self.point_layer):
+                for feat in select:
+                    self.point_layer.deleteFeature(feat.id())
+        except:
+            pass
 
     #download data
     def download(self):
