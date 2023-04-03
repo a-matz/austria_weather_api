@@ -715,6 +715,13 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 self.extent.findChildren(QLineEdit, 'mYMaxLineEdit')[0].text().replace(",","."),#north
                 self.extent.findChildren(QLineEdit, 'mXMaxLineEdit')[0].text().replace(",",".")#east
             ]
+            # correct user input to max. bounding box
+            bbox = self.current_metadata["bbox_outer"]
+            coordinates[0] = str(max(float(coordinates[0]),bbox[0]))
+            coordinates[1] = str(max(float(coordinates[1]),bbox[1]))
+            coordinates[2] = str(min(float(coordinates[2]),bbox[2]))
+            coordinates[3] = str(min(float(coordinates[3]),bbox[3]))
+
             coordinates = ",".join(coordinates)
             url = f"https://dataset.api.hub.zamg.ac.at/v1/\
             {self.combobox_typ.currentText()}/\
