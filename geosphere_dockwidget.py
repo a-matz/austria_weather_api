@@ -588,10 +588,12 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 return
         new_feat = QgsFeature()
         new_feat.setGeometry(pkt)
+        self.point_layer.setReadOnly(False)
         with QSignalBlocker(self.point_layer):
             with edit(self.point_layer):
                 self.point_layer.addFeature(new_feat)
         self.point_layer.triggerRepaint()
+        self.point_layer.setReadOnly(True)
         
         self.update_table_points()
     
@@ -647,6 +649,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.point_layer.geometryChanged.connect(self.update_table_points)
             self.point_layer.editingStarted.connect(self.check_point_select_tool)
             QgsProject.instance().addMapLayer(self.point_layer)
+            self.point_layer.setReadOnly(True)
     
     #when editing is startet change tool, creating point throws error when used in editing mode
     def check_point_select_tool(self):
@@ -656,18 +659,22 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     
     def delete_all_ts_points(self):
         try:
+            self.point_layer.setReadOnly(False)
             with edit(self.point_layer):
                 for feat in self.point_layer.getFeatures():
                     self.point_layer.deleteFeature(feat.id())
+            self.point_layer.setReadOnly(True)
         except:
             pass
 
     def delete_selected_ts_points(self):
         try:
+            self.point_layer.setReadOnly(False)
             select = self.point_layer.getSelectedFeatures()
             with edit(self.point_layer):
                 for feat in select:
                     self.point_layer.deleteFeature(feat.id())
+            self.point_layer.setReadOnly(True)
         except:
             pass
 
@@ -691,7 +698,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         extension = os.path.splitext(self.filewidget.filePath())[1].replace(".","")
         out_format = self.combobox_outformat.currentText()
         if ((out_format == "csv" and extension != "csv") or \
-            (out_format == "geojson" and (extension != "json" or extension != "geojson")) or \
+            (out_format == "geojson" and (extension not in ("json","geojson"))) or \
             (out_format == "netcdf" and extension != "nc")):
             message_accepted =QMessageBox.warning(self,self.tr("Warning"),self.tr("File extension does not match selected output format.\nDo you want to continue?"), QMessageBox.Yes|QMessageBox.No)
             if message_accepted == QMessageBox.No:
@@ -773,7 +780,8 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             elif self.combobox_outformat.currentText() == "csv":
                 layer = QgsVectorLayer(path, lname,"ogr")
             elif self.combobox_outformat.currentText() == "geojson":
-                layer = QgsVectorLayer(f"{path}|layername={lname}", lname,"ogr")
+                #layer = QgsVectorLayer(f"{path}|layername={lname}", lname,"ogr")
+                layer = self.load_geojson(path, lname)
             else:
                 layer = QgsVectorLayer()
             if layer.isValid:
@@ -781,3 +789,47 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         self.setCursor(Qt.ArrowCursor)
         self.iface.messageBar().pushSuccess(self.tr("Download finished"), f"File successfully saved in  <a href= '{os.path.dirname(path)}'> {path}  </a>")
+    
+    def load_geojson(self, json_path, layer_name):
+        with open(json_path, 'r', encoding='utf-8') as f:
+            js = json.load(f)
+
+        lname = self.combobox_id.currentText() + "_" + layer_name
+        layer = QgsVectorLayer("point?crs=epsg:4326", lname, "memory")
+        pr = layer.dataProvider()
+        attributes = [] 
+        attributes.append(QgsField("timestamp", QVariant.DateTime))
+        attributes.append(QgsField("station", QVariant.Int))
+        attributes.append(QgsField("parameter", QVariant.String))
+        attributes.append(QgsField("parameter_name", QVariant.String))
+        attributes.append(QgsField("unit", QVariant.String))
+        attributes.append(QgsField("value", QVariant.Double))
+        
+        pr.addAttributes(attributes)
+        layer.updateFields()
+
+        for station_feature in js["features"]:
+            station_id = station_feature["properties"]["station"]
+            lat = station_feature["geometry"]["coordinates"][1]
+            lon = station_feature["geometry"]["coordinates"][0]
+            for parameter in station_feature["properties"]["parameters"]:
+                parameter_name = station_feature["properties"]["parameters"][parameter]["name"]
+                unit = station_feature["properties"]["parameters"][parameter]["unit"]
+                for i, value in enumerate(station_feature["properties"]["parameters"][parameter]["data"]):
+                    feat = QgsFeature()
+                    attributes = [
+                        js["timestamps"][i],
+                        station_id,
+                        parameter,
+                        parameter_name,
+                        unit,
+                        value]
+                    feat.setAttributes(attributes)
+                    feat.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(lon,lat)))
+                    with edit(layer):
+                        layer.addFeature(feat)
+        self.iface.messageBar().pushInfo(self.tr("Geojson added to map."),self.tr("The geojson file will be added as temporary layer in long format.\nThe original downloaded json file remains untouched."))
+        return(layer)
+        #QgsProject.instance().addMapLayer(layer)
+                
+          
