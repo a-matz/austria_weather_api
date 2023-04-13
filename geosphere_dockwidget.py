@@ -29,7 +29,7 @@ from qgis.PyQt.QtCore import Qt, QSignalBlocker, QVariant, pyqtSignal, QTranslat
 from qgis.PyQt.QtWidgets import QProgressBar, QDialog, QGridLayout, QProgressDialog, QMessageBox, QTableWidgetItem, QCheckBox, QLineEdit
 import processing
 from qgis.core import (QgsMapLayerProxyModel, QgsGeometry, 
-                      QgsProject, QgsFeature, QgsPoint, edit, QgsVectorLayer, QgsMeshLayer, QgsRasterLayer,
+                      QgsProject, QgsFeature, QgsPoint, edit, QgsVectorLayer, QgsMeshLayer, QgsRasterLayer, QgsRenderContext,
                       QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsField, QgsPointXY,
                       QgsProcessing, Qgis, NULL)
 from qgis.gui import QgsMapToolExtent, QgsMapToolPan, QgsMapToolEmitPoint, QgsMessageBar
@@ -298,6 +298,8 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             #enable select extent
             self.extent.setEnabled(True)
             self.extent.setCollapsed(False)
+            # add layer with grid extend
+            self.create_grid_layer()
         
         self.update_parameters()
         self.selected_parameters = []
@@ -791,6 +793,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.iface.messageBar().pushSuccess(self.tr("Download finished"), f"File successfully saved in  <a href= '{os.path.dirname(path)}'> {path}  </a>")
     
     def load_geojson(self, json_path, layer_name):
+        # returns as temporary layer in long format
         with open(json_path, 'r', encoding='utf-8') as f:
             js = json.load(f)
 
@@ -830,6 +833,31 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         layer.addFeature(feat)
         self.iface.messageBar().pushInfo(self.tr("Geojson added to map."),self.tr("The geojson file will be added as temporary layer in long format.\nThe original downloaded json file remains untouched."))
         return(layer)
-        #QgsProject.instance().addMapLayer(layer)
+    
+    def create_grid_layer(self):
+        crs = self.current_metadata["crs"].lower()
+        layer = QgsVectorLayer(f"polygon?crs={crs}", "Grid", "memory")
+
+        grid_bounds = self.current_metadata["grid_bounds"]
+
+        polygon = QgsGeometry.fromPolygonXY(
+            [[
+                QgsPointXY(grid_bounds[1], grid_bounds[0]),
+                QgsPointXY(grid_bounds[1], grid_bounds[2]),
+                QgsPointXY(grid_bounds[3], grid_bounds[2]),
+                QgsPointXY(grid_bounds[3], grid_bounds[0])
+            ]])
+        feat = QgsFeature()
+        feat.setGeometry(polygon)
+        with edit(layer):
+            layer.addFeature(feat)
+
+        resolution = self.current_metadata["spatial_resolution_m"]
+        qml = os.path.abspath(os.path.join(os.path.dirname(__file__),"layer_style","grid.qml"))
+        layer.loadNamedStyle(qml)
+        layer.renderer().symbols(QgsRenderContext())[1].symbolLayer(0).setDistance(resolution)
+        layer.renderer().symbols(QgsRenderContext())[1].symbolLayer(1).setDistance(resolution)
+        QgsProject.instance().addMapLayer(layer)
+        
                 
           
