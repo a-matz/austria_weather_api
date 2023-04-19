@@ -801,8 +801,17 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         layer = QgsVectorLayer("point?crs=epsg:4326", lname, "memory")
         pr = layer.dataProvider()
         attributes = [] 
+
+        if self.combobox_typ.currentText() == "station":
+            station = True
+        else:
+            station = False
         attributes.append(QgsField("timestamp", QVariant.DateTime))
-        attributes.append(QgsField("station", QVariant.Int))
+        if station:
+            attributes.append(QgsField("station", QVariant.Int))
+        else:
+            attributes.append(QgsField("lat", QVariant.Double))
+            attributes.append(QgsField("lon", QVariant.Double))
         attributes.append(QgsField("parameter", QVariant.String))
         attributes.append(QgsField("parameter_name", QVariant.String))
         attributes.append(QgsField("unit", QVariant.String))
@@ -812,7 +821,8 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         layer.updateFields()
 
         for station_feature in js["features"]:
-            station_id = station_feature["properties"]["station"]
+            if station:
+                station_id = station_feature["properties"]["station"]
             lat = station_feature["geometry"]["coordinates"][1]
             lon = station_feature["geometry"]["coordinates"][0]
             for parameter in station_feature["properties"]["parameters"]:
@@ -821,12 +831,16 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 for i, value in enumerate(station_feature["properties"]["parameters"][parameter]["data"]):
                     feat = QgsFeature()
                     attributes = [
-                        js["timestamps"][i],
-                        station_id,
-                        parameter,
+                        js["timestamps"][i]]
+                    if station:
+                        attributes.append(station_id)
+                    else:
+                        attributes.extend([lat,lon])
+                    attributes.extend(
+                        [parameter,
                         parameter_name,
                         unit,
-                        value]
+                        value])
                     feat.setAttributes(attributes)
                     feat.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(lon,lat)))
                     with edit(layer):
