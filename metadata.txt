@@ -6,7 +6,7 @@
 name=Austria Weather API
 qgisMinimumVersion=3.28
 description=QGis connection to Geosphere Austria API
-version=0.3
+version=0.4
 author=Armin Matzl
 email=arminmatzl@gmail.com
 

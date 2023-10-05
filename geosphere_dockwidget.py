@@ -156,7 +156,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 load_from_web = True
 
         if load_from_web:    
-            url = "https://dataset.api.hub.zamg.ac.at/v1/datasets"
+            url = "https://dataset.api.hub.geosphere.at/v1/datasets"
             request = requests.get(url).json()
 
             # creat window with progressbar
@@ -260,7 +260,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     #load metadata from selected datapoint
     def load_metadata(self):
-        url = f"https://dataset.api.hub.zamg.ac.at/v1/{self.combobox_typ.currentText()}/{self.combobox_modus.currentText()}/{self.combobox_id.currentText()}/metadata"
+        url = f"https://dataset.api.hub.geosphere.at/v1/{self.combobox_typ.currentText()}/{self.combobox_modus.currentText()}/{self.combobox_id.currentText()}/metadata"
         request = requests.get(url)
         self.current_metadata = request.json()
 
@@ -347,7 +347,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.iface.messageBar().pushInfo(self.tr("Finish"), self.tr("Loaded metadata from server."))
 
     def open_description_url(self):
-        webbrowser.open(f"https://data.hub.zamg.ac.at/dataset/{self.combobox_id.currentText()}", new=2)
+        webbrowser.open(f"https://data.hub.geosphere.at/dataset/{self.combobox_id.currentText()}", new=2)
 
     #set filter on filewidget
     def update_filepath(self):
@@ -710,7 +710,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         #download csv
         if self.combobox_typ.currentText() == "station":
             stations = ",".join(str(i) for i in self.station_list)
-            url = f"https://dataset.api.hub.zamg.ac.at/v1/\
+            url = f"https://dataset.api.hub.geosphere.at/v1/\
             {self.combobox_typ.currentText()}/\
             {self.combobox_modus.currentText()}/\
             {self.combobox_id.currentText()}\
@@ -732,7 +732,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             coordinates[3] = str(min(float(coordinates[3]),bbox[3]))
 
             coordinates = ",".join(coordinates)
-            url = f"https://dataset.api.hub.zamg.ac.at/v1/\
+            url = f"https://dataset.api.hub.geosphere.at/v1/\
             {self.combobox_typ.currentText()}/\
             {self.combobox_modus.currentText()}/\
             {self.combobox_id.currentText()}\
@@ -750,7 +750,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 points.append("%.12f" % lat + "," + "%.12f" %  lon)
 
             points = "&lat_lon=".join(points)
-            url = f"https://dataset.api.hub.zamg.ac.at/v1/\
+            url = f"https://dataset.api.hub.geosphere.at/v1/\
             {self.combobox_typ.currentText()}/\
             {self.combobox_modus.currentText()}/\
             {self.combobox_id.currentText()}\
@@ -850,7 +850,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     
     def create_grid_layer(self):
         crs = self.current_metadata["crs"].lower()
-        layer = QgsVectorLayer(f"polygon?crs={crs}", "Grid", "memory")
+        layer = QgsVectorLayer(f"polygon?crs={crs}", "Grid Boundary", "memory")
 
         grid_bounds = self.current_metadata["grid_bounds"]
 
@@ -867,11 +867,15 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             layer.addFeature(feat)
 
         resolution = self.current_metadata["spatial_resolution_m"]
-        qml = os.path.abspath(os.path.join(os.path.dirname(__file__),"layer_style","grid.qml"))
+        qml = os.path.abspath(os.path.join(os.path.dirname(__file__),"layer_style","grid_boundary.qml"))
         layer.loadNamedStyle(qml)
-        layer.renderer().symbols(QgsRenderContext())[1].symbolLayer(0).setDistance(resolution)
-        layer.renderer().symbols(QgsRenderContext())[1].symbolLayer(1).setDistance(resolution)
-        QgsProject.instance().addMapLayer(layer)
+        #layer.renderer().symbols(QgsRenderContext())[1].symbolLayer(0).setDistance(resolution)
+        #layer.renderer().symbols(QgsRenderContext())[1].symbolLayer(1).setDistance(resolution)
+        try:
+            QgsProject.instance().removeMapLayer(self.current_grid_layer)
+        except:
+            pass
+        self.current_grid_layer = QgsProject.instance().addMapLayer(layer)
         
                 
           
