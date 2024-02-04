@@ -100,6 +100,9 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.start_time.setTimeSpec(Qt.UTC)
         self.end_time.setTimeSpec(Qt.UTC)
 
+        #separate grid widget for forecast times, hide at startup
+        self.forecast_time_grid.setVisible(False)
+
         self.load_datasets()
         self.setCursor(Qt.ArrowCursor)
 
@@ -317,20 +320,9 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.combobox_outformat.setCurrentIndex(formats.index("netcdf"))
         
         #set min and max dates to widget
-        if self.current_metadata["mode"] != "current":
-            strt_date = QDateTime.fromString(self.current_metadata["start_time"], Qt.ISODate)
-            end_date = QDateTime.fromString(self.current_metadata["end_time"], Qt.ISODate)
-            self.start_time.setMinimumDateTime(strt_date)
-            self.end_time.setMinimumDateTime(strt_date)
-            self.start_time.setMaximumDateTime(end_date)
-            self.end_time.setMaximumDateTime(end_date)
-
-            self.label_min_date.setText(f"(min: {strt_date.toString('dd.MM.yyyy HH:mm')} UTC)")
-            self.label_max_date.setText(f"(max: {end_date.toString('dd.MM.yyyy HH:mm')}) UTC")
-
-            #self.start_time.setDateTime(end_date)
-            self.end_time.setDateTime(end_date)
-        elif self.current_metadata["mode"] == "current":
+        self.time_grid.setVisible(True)
+        self.forecast_time_grid.setVisible(False)
+        if self.current_metadata["mode"] == "current":
             time = QDateTime(QDateTime.currentDateTimeUtc())
             self.start_time.setMinimumDateTime(time)
             self.end_time.setMinimumDateTime(time)
@@ -341,6 +333,26 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
             self.start_time.setDateTime(time)
             self.end_time.setDateTime(time)
+        
+        elif self.current_metadata["mode"] == "forecast":
+            self.forecast_time_grid.setVisible(True)
+            self.time_grid.setVisible(False)
+            self.forecast_time_combobox.clear()
+            self.forecast_time_combobox.addItems(self.current_metadata["available_forecast_reftimes"])
+
+        else: #self.current_metadata["mode"] != "current":
+            strt_date = QDateTime.fromString(self.current_metadata["start_time"], Qt.ISODate)
+            end_date = QDateTime.fromString(self.current_metadata["end_time"], Qt.ISODate)
+            self.start_time.setMinimumDateTime(strt_date)
+            self.end_time.setMinimumDateTime(strt_date)
+            self.start_time.setMaximumDateTime(end_date)
+            self.end_time.setMaximumDateTime(end_date)
+
+            self.label_min_date.setText(f"{strt_date.toString('dd.MM.yyyy HH:mm')} UTC")
+            self.label_max_date.setText(f"{end_date.toString('dd.MM.yyyy HH:mm')} UTC")
+
+            #self.start_time.setDateTime(end_date)
+            self.end_time.setDateTime(end_date)
         
         self.button_download.setEnabled(True)
         self.button_description.setEnabled(True)
@@ -687,8 +699,12 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             return
         self.setCursor(Qt.WaitCursor)
         parameter = ",".join(self.selected_parameters)
-        strt = self.start_time.dateTime().toString("yyyy-MM-ddThh:mm")
-        end = self.end_time.dateTime().toString("yyyy-MM-ddThh:mm")
+        if self.current_metadata["mode"] != "forecast":
+            strt = self.start_time.dateTime().toString("yyyy-MM-ddThh:mm")
+            end = self.end_time.dateTime().toString("yyyy-MM-ddThh:mm")
+        else:
+            strt = "2021-01-01T00:00"
+            end = "2021-01-02T00:00"
 
         #check date input
         if strt == end and self.current_metadata["mode"] != "current":
@@ -706,6 +722,15 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             if message_accepted == QMessageBox.No:
                 self.setCursor(Qt.ArrowCursor)
                 return
+        
+        # if mode is forecast define offset (reference time)
+        if self.current_metadata["mode"] == "forecast":
+            offset = self.forecast_time_combobox.currentIndex()
+            offset_txt = f"forecast_offset={offset}&"
+            time_txt = ""
+        else:
+            offset_txt = ""
+            time_txt = f"start={strt}&end={end}&"
 
         #download csv
         if self.combobox_typ.currentText() == "station":
@@ -714,8 +739,8 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             {self.combobox_typ.currentText()}/\
             {self.combobox_modus.currentText()}/\
             {self.combobox_id.currentText()}\
-            ?parameters={parameter}&start={strt}&end={end}\
-            &station_ids={stations}&output_format={self.combobox_outformat.currentText()}".replace(" ","")
+            ?parameters={parameter}&{time_txt}\
+            station_ids={stations}&{offset_txt}output_format={self.combobox_outformat.currentText()}".replace(" ","")
         
         elif self.combobox_typ.currentText() == "grid":
             coordinates = [
@@ -736,10 +761,16 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             {self.combobox_typ.currentText()}/\
             {self.combobox_modus.currentText()}/\
             {self.combobox_id.currentText()}\
-            ?parameters={parameter}&start={strt}&end={end}\
-            &bbox={coordinates}&output_format={self.combobox_outformat.currentText()}".replace(" ","")
+            ?parameters={parameter}&{time_txt}\
+            bbox={coordinates}&{offset_txt}output_format={self.combobox_outformat.currentText()}".replace(" ","")
         
         elif self.combobox_typ.currentText() == "timeseries":
+            try:
+                self.point_layer.id()
+            except:
+                QMessageBox.warning(self,self.tr("Error"),self.tr("Download failed.\nDefine points on map."))
+                self.setCursor(Qt.ArrowCursor)
+                return
             if self.point_layer.isEditable():
                 self.point_layer.commitChanges()
             points = []
@@ -754,8 +785,8 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             {self.combobox_typ.currentText()}/\
             {self.combobox_modus.currentText()}/\
             {self.combobox_id.currentText()}\
-            ?parameters={parameter}&start={strt}&end={end}\
-            &lat_lon={points}&output_format={self.combobox_outformat.currentText()}".replace(" ","")
+            ?parameters={parameter}&{time_txt}\
+            lat_lon={points}&{offset_txt}output_format={self.combobox_outformat.currentText()}".replace(" ","")
         response = requests.get(url)
         print(url)
         if response.status_code == 200:

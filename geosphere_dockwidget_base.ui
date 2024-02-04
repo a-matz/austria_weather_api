@@ -118,7 +118,7 @@
          <x>0</x>
          <y>0</y>
          <width>547</width>
-         <height>911</height>
+         <height>944</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -321,63 +321,7 @@
           <property name="topMargin">
            <number>0</number>
           </property>
-          <item row="0" column="2">
-           <widget class="QLabel" name="label_3">
-            <property name="maximumSize">
-             <size>
-              <width>60</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>End time</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_2">
-            <property name="maximumSize">
-             <size>
-              <width>60</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Start time</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0" colspan="2">
-           <widget class="QgsDateTimeEdit" name="start_time"/>
-          </item>
-          <item row="2" column="0" colspan="2">
-           <widget class="QLabel" name="label_4">
-            <property name="text">
-             <string>Output format</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2" colspan="2">
-           <widget class="QComboBox" name="combobox_outformat"/>
-          </item>
-          <item row="1" column="2" colspan="2">
-           <widget class="QgsDateTimeEdit" name="end_time"/>
-          </item>
-          <item row="3" column="0" colspan="4">
-           <widget class="QgsFileWidget" name="filewidget">
-            <property name="storageMode">
-             <enum>QgsFileWidget::SaveFile</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="2" colspan="2">
-           <widget class="QCheckBox" name="checkbox_addLayer">
-            <property name="text">
-             <string>add Layer to Map</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0" colspan="2">
+          <item row="6" column="0" colspan="2">
            <widget class="QPushButton" name="button_download">
             <property name="enabled">
              <bool>false</bool>
@@ -387,18 +331,102 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
-           <widget class="QLabel" name="label_min_date">
-            <property name="text">
-             <string>min date</string>
+          <item row="4" column="2" colspan="2">
+           <widget class="QComboBox" name="combobox_outformat"/>
+          </item>
+          <item row="0" column="0" colspan="4">
+           <widget class="QWidget" name="time_grid" native="true">
+            <layout class="QGridLayout" name="gridLayout_8">
+             <property name="topMargin">
+              <number>1</number>
+             </property>
+             <item row="0" column="2">
+              <widget class="QLabel" name="label_3">
+               <property name="maximumSize">
+                <size>
+                 <width>60</width>
+                 <height>50</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>End time</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_2">
+               <property name="maximumSize">
+                <size>
+                 <width>60</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Start time</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLabel" name="label_min_date">
+               <property name="text">
+                <string>min date</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="3">
+              <widget class="QLabel" name="label_max_date">
+               <property name="text">
+                <string>max Date</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0" colspan="2">
+              <widget class="QgsDateTimeEdit" name="start_time"/>
+             </item>
+             <item row="1" column="2" colspan="2">
+              <widget class="QgsDateTimeEdit" name="end_time"/>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="5" column="0" colspan="4">
+           <widget class="QgsFileWidget" name="filewidget">
+            <property name="storageMode">
+             <enum>QgsFileWidget::SaveFile</enum>
             </property>
            </widget>
           </item>
-          <item row="0" column="3">
-           <widget class="QLabel" name="label_max_date">
+          <item row="4" column="0" colspan="2">
+           <widget class="QLabel" name="label_4">
             <property name="text">
-             <string>max Date</string>
+             <string>Output format</string>
             </property>
+           </widget>
+          </item>
+          <item row="6" column="2" colspan="2">
+           <widget class="QCheckBox" name="checkbox_addLayer">
+            <property name="text">
+             <string>add Layer to Map</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" colspan="4">
+           <widget class="QWidget" name="forecast_time_grid" native="true">
+            <layout class="QGridLayout" name="gridLayout_9">
+             <property name="topMargin">
+              <number>1</number>
+             </property>
+             <item row="0" column="1">
+              <widget class="QComboBox" name="forecast_time_combobox"/>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_8">
+               <property name="text">
+                <string>Available forecast reference times (UTC)</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
          </layout>
