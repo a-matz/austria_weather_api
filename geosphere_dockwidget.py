@@ -25,15 +25,15 @@
 import os
 
 from qgis.PyQt import QtGui, QtWidgets, uic
-from qgis.PyQt.QtCore import Qt, QSignalBlocker, QVariant, pyqtSignal, QTranslator, QCoreApplication, QDateTime
+from qgis.PyQt.QtCore import Qt, QSignalBlocker, QVariant, pyqtSignal, QTranslator, QCoreApplication, QDateTime, QUrl
 from qgis.PyQt.QtWidgets import QProgressBar, QDialog, QGridLayout, QProgressDialog, QMessageBox, QTableWidgetItem, QCheckBox, QLineEdit
 import processing
+from qgis.PyQt.QtNetwork import QNetworkRequest
 from qgis.core import (QgsMapLayerProxyModel, QgsGeometry, 
                       QgsProject, QgsFeature, QgsPoint, edit, QgsVectorLayer, QgsMeshLayer, QgsRasterLayer, QgsRenderContext,
                       QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsField, QgsPointXY,
-                      QgsProcessing, Qgis, NULL)
+                      QgsProcessing, Qgis, NULL, QgsNetworkAccessManager)
 from qgis.gui import QgsMapToolExtent, QgsMapToolPan, QgsMapToolEmitPoint, QgsMessageBar
-import requests
 import pandas as pd
 import pickle
 import json
@@ -100,6 +100,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.start_time.setTimeSpec(Qt.UTC)
         self.end_time.setTimeSpec(Qt.UTC)
 
+        self.nwm = QgsNetworkAccessManager.instance()
         #separate grid widget for forecast times, hide at startup
         self.forecast_time_grid.setVisible(False)
 
@@ -141,7 +142,13 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 if self.iface.mapCanvas().mapTool().toolName() == "geosphere_api_pointTool":
                     self.iface.mapCanvas().setMapTool(QgsMapToolPan(self.iface.mapCanvas()))
 
-
+    def get_request(self, url, return_json = False):
+        req = QNetworkRequest(QUrl(url))
+        reply = self.nwm.blockingGet(req)
+        if not return_json:
+            return reply
+        else:
+            return json.loads(reply.content().data())
 
     #load available datasets when plugin starts
     #saves available datasets, repeated every 30 days to check for updates
@@ -160,7 +167,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         if load_from_web:    
             url = "https://dataset.api.hub.geosphere.at/v1/datasets"
-            request = requests.get(url).json()
+            request = self.get_request(url, return_json = True)
 
             # creat window with progressbar
             prog = QProgressDialog(self.tr("Start Plugin\nLoad available datasets at first startup.."),None, 0, len(request))
@@ -171,7 +178,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             for i, (key, value) in enumerate(request.items()):
                 prog.setValue(i)
                 try:
-                    requests.get(value["url"]).json()
+                    self.get_request(value["url"], return_json = True)
                     typ = key.split("/")[1]
                     modus = key.split("/")[2]
                     id = key.split("/")[3]
@@ -264,8 +271,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     #load metadata from selected datapoint
     def load_metadata(self):
         url = f"https://dataset.api.hub.geosphere.at/v1/{self.combobox_typ.currentText()}/{self.combobox_modus.currentText()}/{self.combobox_id.currentText()}/metadata"
-        request = requests.get(url)
-        self.current_metadata = request.json()
+        self.current_metadata = self.get_request(url, return_json = True)
 
         if self.combobox_typ.currentText() == "station":
             #enable select stations
@@ -787,11 +793,11 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             {self.combobox_id.currentText()}\
             ?parameters={parameter}&{time_txt}\
             lat_lon={points}&{offset_txt}output_format={self.combobox_outformat.currentText()}".replace(" ","")
-        response = requests.get(url)
+        response = self.get_request(url)
         print(url)
-        if response.status_code == 200:
-            content = response.content
-            if self.combobox_outformat == "csv":
+        if response.error() == 0:
+            content = response.content().data()
+            if self.combobox_outformat.currentText() == "csv":
                 content = content.replace(b",",b";").replace(b".",b",")
             try:
                 with open(self.filewidget.filePath(), "wb") as file:
@@ -811,7 +817,8 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 uri=f'NETCDF:"{path}"'
                 layer = QgsMeshLayer(uri,lname,"mdal")
             elif self.combobox_outformat.currentText() == "csv":
-                layer = QgsVectorLayer(path, lname,"ogr")
+                uri = f"file:///{path}?type=csv&delimiter=;&maxFields=10000&detectTypes=yes&decimalPoint=,&xyDms=yes&geomType=none&subsetIndex=no&watchFile=no"
+                layer = QgsVectorLayer(uri, lname,"delimitedtext")
             elif self.combobox_outformat.currentText() == "geojson":
                 #layer = QgsVectorLayer(f"{path}|layername={lname}", lname,"ogr")
                 layer = self.load_geojson(path, lname)
