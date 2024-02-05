@@ -252,5 +252,10 @@ Wenn alle korrekt sind könnte der angefragte Datensatz zu groß sein.</translat
         <source>max Date</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../geosphere_dockwidget_base.ui" line="425"/>
+        <source>Available forecast reference times (UTC)</source>
+        <translation type="unfinished">Verfügbare Referenzzeitpunkte (UTC)</translation>
+    </message>
 </context>
 </TS>
