@@ -93,6 +93,8 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         #button description, open browser 
         self.button_description.clicked.connect(self.open_description_url)
 
+        #if a layer is removed by the user check if the layer is necessary for the plugin
+        # if yes: change maptool to avoid error
         QgsProject.instance().layerRemoved.connect(self.layer_removed)
         
         self.station_list = []
@@ -119,6 +121,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def tr(self, message):
         return QCoreApplication.translate('GeosphereAPI', message)
     
+    # add Basemap.at as WMS Layer
     def add_basemap(self):
         uri = "crs=EPSG:3857&dpiMode=7&format=image/jpeg&layers=bmaphidpi&styles=normal&tileMatrixSet=google3857&url=https://www.basemap.at/wmts/1.0.0/WMTSCapabilities.xml&http-header:referer="
         QgsProject.instance().addMapLayer(QgsRasterLayer(uri, "Basemap.at", "wms"))
@@ -148,11 +151,17 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         if not return_json:
             return reply
         else:
-            return json.loads(reply.content().data())
+            try:
+                return json.loads(reply.content().data())
+            except:
+                QMessageBox.warning(self,self.tr("Error"),self.tr(f"Please check Network connection.\n\n{reply.errorString()}"))
 
-    #load available datasets when plugin starts
-    #saves available datasets, repeated every 30 days to check for updates
     def load_datasets(self):
+        """
+        load available datasets, called when plugin is started
+        save dictionary with available datasets to 'geosphere_datasets.pkl' in plugin directory
+        refresh dictionary only if latest update is older than 1 month
+        """
         dataset_file = os.path.join(os.path.dirname(__file__),"geosphere_datasets.pkl")
         if not os.path.isfile(dataset_file):
             load_from_web = True
@@ -165,7 +174,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             else:
                 load_from_web = True
 
-        if load_from_web:    
+        if load_from_web:
             url = "https://dataset.api.hub.geosphere.at/v1/datasets"
             request = self.get_request(url, return_json = True)
 
@@ -190,15 +199,18 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     if id not in self.datasets[typ][modus]:
                         self.datasets[typ][modus].append(id)
                     
-                    self.datasets.append(key)
+                    #self.datasets.append(key)
                 except:
+                    #login required, skip dataset
                     pass
             self.datasets["latest_update"] = datetime.now()
             
+            #save dictionary as pickle file
             with open(dataset_file, 'wb') as pkl:
                 pickle.dump(self.datasets, pkl, protocol=pickle.HIGHEST_PROTOCOL)
 
         del self.datasets["latest_update"]
+        #update 'typ' combobox
         with QSignalBlocker(self.combobox_typ):
             self.combobox_typ.addItems(self.datasets.keys())
             self.update_modus()
@@ -250,6 +262,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         with QSignalBlocker(self.parameter_filter):
             self.parameter_filter.setText("")
         
+        #reset maptool
         if self.iface.mapCanvas().mapTool() != None:
             if self.iface.mapCanvas().mapTool().toolName() == "geosphere_api_pointTool":
                 self.iface.mapCanvas().setMapTool(QgsMapToolPan(self.iface.mapCanvas()))
@@ -312,6 +325,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         
         self.update_parameters()
         self.selected_parameters = []
+        self.station_list = []
         self.table_stations.clear()
         self.table_stations.setRowCount(0)
         self.table_stations.setColumnCount(0)
@@ -390,9 +404,11 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.groupbox_stations.setEnabled(True)
         df = pd.DataFrame.from_dict(self.current_metadata["stations"]).convert_dtypes()
 
+        #create empty memory layer
         layer = QgsVectorLayer("point?crs=epsg:4326", "stationen", "memory")
         pr = layer.dataProvider()
         attributes = [] 
+        #find correct datatypes for attributes
         for i, datatype in enumerate(df.dtypes):
             if df.columns[i] in ("valid_from","valid_to"):
                 typ = QVariant.Date
@@ -404,15 +420,15 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 typ = QVariant.Bool
             else:
                 typ = QVariant.String
-            
             attributes.append(QgsField(df.columns[i], typ))
         
+        #add attributes to layer
         pr.addAttributes(attributes)
         layer.updateFields()
 
         for id,row in df.iterrows():
             feat = QgsFeature()
-            # replave null values
+            # replace null values
             values = []
             for i,value in enumerate(row.tolist()):
                 if pd.isna(value):
@@ -424,12 +440,14 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                         values.append(NULL)
                 else:
                     values.append(value)
-
+            #add attributes to feature
             feat.setAttributes(values)
             feat.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(row.lon, row.lat)))
+            #add feature to layer
             with edit(layer):
                 layer.addFeature(feat)
 
+        #define layer crs: epsg:3857 using processing/reprojectlayer
         alg_params = {
                     'INPUT': layer,
                     'OPERATION': '',
@@ -438,32 +456,41 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         out = processing.run('native:reprojectlayer', alg_params)
         out["OUTPUT"].setName(self.combobox_id.currentText())
+        #load predefined qml style for stations
         qml = os.path.abspath(os.path.join(os.path.dirname(__file__),"layer_style","stations_points.qml"))
         out["OUTPUT"].loadNamedStyle(qml)
+        #add layer to canvas and save as 'current_layer'
         self.current_layer = QgsProject.instance().addMapLayer(out["OUTPUT"])
+        #save attribute index 'name'
         self.current_layer_idxName = self.current_layer.fields().names().index("name")
+        #save attribute index 'id'
         self.current_layer_idxID = self.current_layer.fields().names().index("id")
         self.button_select.setEnabled(True)
 
     #select features on canvas by rectangle
     def get_features(self, rect):
+        """
+        select features within rectangle
+        rect: input from maptool
+        """
         self.select_tool.clearRubberBand()
         
+        #reproject rectangle from current project crs to 3857
         sourceCrs = QgsProject.instance().crs()
         destCrs = QgsCoordinateReferenceSystem.fromEpsgId(3857)
         tr = QgsCoordinateTransform(sourceCrs, destCrs, QgsProject.instance())
         poly = QgsGeometry.fromRect(rect)
         poly.transform(tr)
 
-
+        # get all feature ids from current layer (stations) which are inside polygon
         ids = [f.id() for f in self.current_layer.getFeatures() if f.geometry().intersects(poly)]
         station_ids = [f.attributes()[self.current_layer_idxID] for f in self.current_layer.getFeatures() if f.id() in ids]
         station_names = [f.attributes()[self.current_layer_idxName] for f in self.current_layer.getFeatures() if f.id() in ids]
-        tab_display = [": ".join(i) for i in list(zip(station_ids,station_names))]
-        self.current_layer.selectByIds(ids)
+        self.current_layer.selectByIds(ids) # select features
 
         current_len = self.table_stations.rowCount()
         
+        #update table, add station ids and names
         if len(ids) != 0:
             self.table_stations.setColumnCount(2)
         
@@ -530,10 +557,12 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     #update table with parameters
     def update_parameters(self):
+        #read available parameters from metadata
         data = pd.DataFrame.from_dict(self.current_metadata["parameters"])
 
         self.setCursor(Qt.WaitCursor)
         
+        #clear table, add all parameters to table
         self.table_parameters.clear()
         self.table_parameters.setSortingEnabled(False)
         self.table_parameters.setRowCount(0)
@@ -553,8 +582,8 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     item.setData(Qt.DisplayRole, value)
                     self.table_parameters.setItem(i,col+1,item)
 
-        header = [""]
-        header.extend(data.columns.values)
+        header = [""] # no header for checkbox
+        header.extend(data.columns.values) #add parameter names
         self.table_parameters.setHorizontalHeaderLabels(header)
         self.table_parameters.resizeColumnsToContents()
         self.table_parameters.setSortingEnabled(True)
@@ -658,6 +687,10 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     self.select_point(f.geometry(), crs = layer.crs())
 
     def add_ts_point_layer(self):
+        """
+        add memory point layer if not exists
+        select location for timeseries
+        """
         try:
             self.point_layer.id()
         except:
@@ -700,6 +733,11 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     #download data
     def download(self):
+        """
+        download data from datahub
+        check input and send request
+        load data to map
+        """
         if not os.path.isdir(os.path.dirname(self.filewidget.filePath())):
             QMessageBox.warning(self,self.tr("Missing filepath"),self.tr("Define storage location."))
             return
@@ -806,7 +844,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 QMessageBox.warning(self,self.tr("Error"),self.tr("Could not write file.\nCheck path.."))
                 return
         else:
-            QMessageBox.warning(self,self.tr("Error"),self.tr("Download failed.\nCheck input variables..\nIf input variables ar correct the dataset may be too large."))
+            QMessageBox.warning(self,self.tr("Error"),self.tr(f"Download failed.\nCheck input variables..\nIf input variables ar correct the dataset may be too large."))
             self.setCursor(Qt.ArrowCursor)
             return
 
@@ -831,7 +869,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.iface.messageBar().pushSuccess(self.tr("Download finished"), f"File successfully saved in  <a href= '{os.path.dirname(path)}'> {path}  </a>")
     
     def load_geojson(self, json_path, layer_name):
-        # returns as temporary layer in long format
+        # returns a temporary layer in long format
         with open(json_path, 'r', encoding='utf-8') as f:
             js = json.load(f)
 
