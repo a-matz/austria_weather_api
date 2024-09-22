@@ -179,15 +179,16 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             request = self.get_request(url, return_json = True)
 
             # creat window with progressbar
-            prog = QProgressDialog(self.tr("Start Plugin\nLoad available datasets at first startup.."),None, 0, len(request))
+            prog = QProgressDialog(self.tr("Start Plugin\nLoad available datasets ..."),None, 0, len(request))
             prog.setWindowModality(Qt.WindowModal)
                 
             self.datasets = {}
-            #some datasets require login, determine accessable datasets
+            #some datasets require login, determine accessible datasets
+            # currently no datasets with login?! 
             for i, (key, value) in enumerate(request.items()):
                 prog.setValue(i)
                 try:
-                    self.get_request(value["url"], return_json = True)
+                    self.get_request(value["url"]+"/metadata", return_json = True)
                     typ = key.split("/")[1]
                     modus = key.split("/")[2]
                     id = key.split("/")[3]
@@ -203,6 +204,34 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 except:
                     #login required, skip dataset
                     pass
+            
+            # some datasets have new versions
+            # example: spartacus-v1-1m-1km --> spartacus-v2-1m-1km
+            # determine depricated datasets --> v2 or higher is available
+
+            self.datasets_depricated = {}
+            for ds_typ in self.datasets.keys():
+                self.datasets_depricated[ds_typ] = {}
+                for ds_mode in self.datasets[ds_typ].keys():
+                    # split id name into components, create dataframe
+                    df_ids = pd.DataFrame([i.split("-") for i in self.datasets[ds_typ][ds_mode]])
+                    # remove "v" from version to get version number (v1 --> 1) as integer
+                    df_ids[1] = df_ids[1].str.replace("v","").astype(int)
+                    # get colnames --> second column indicates version
+                    group_names = df_ids.columns.to_list()
+                    # delet version, we don't want to group by this col
+                    del group_names[1]
+                    # groupby cols except version col --> example: 0,2,3 spartacus,1m,1km --> get index with max version numbers
+                    idx = df_ids.groupby(group_names)[1].idxmax().to_list()
+                    # select only elements with max version number
+                    # remove v1 from list of ids if v2 is available
+                    #self.datasets[ds_typ][ds_mode] = [self.datasets[ds_typ][ds_mode][i] for i in idx]
+
+                    # get pd.series with true/false if dataset is depricated
+                    idx_depricated = df_ids.groupby(group_names)[1].transform(max) == df_ids[1]
+                    # filter index of depricated datasets, 
+                    self.datasets_depricated[ds_typ][ds_mode] = idx_depricated[~idx_depricated].index.to_list()
+
             self.datasets["latest_update"] = datetime.now()
             
             #save dictionary as pickle file
@@ -233,6 +262,10 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.combobox_id.addItems(self.datasets[self.combobox_typ.currentText()][self.combobox_modus.currentText()])
             self.combobox_id.setCurrentIndex(-1)
             self.reset_ui()
+            # textcolor of depricated datasets = grey
+            for idx in self.datasets_depricated[self.combobox_typ.currentText()][self.combobox_modus.currentText()]:
+                self.combobox_id.setItemData(idx, QtGui.QBrush(Qt.gray), Qt.TextColorRole)
+            
 
     #reset ui objects when combobox type or mode is changed
     def reset_ui(self):
@@ -844,7 +877,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 QMessageBox.warning(self,self.tr("Error"),self.tr("Could not write file.\nCheck path.."))
                 return
         else:
-            QMessageBox.warning(self,self.tr("Error"),self.tr(f"Download failed.\nCheck input variables..\nIf input variables ar correct the dataset may be too large."))
+            QMessageBox.warning(self,self.tr("Error"),self.tr(f"Download failed.\nCheck input variables..\nIf input variables are correct the dataset may be too large."))
             self.setCursor(Qt.ArrowCursor)
             return
 
