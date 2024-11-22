@@ -123,8 +123,10 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     
     # add Basemap.at as WMS Layer
     def add_basemap(self):
-        uri = "crs=EPSG:3857&dpiMode=7&format=image/jpeg&layers=bmaphidpi&styles=normal&tileMatrixSet=google3857&url=https://www.basemap.at/wmts/1.0.0/WMTSCapabilities.xml&http-header:referer="
-        QgsProject.instance().addMapLayer(QgsRasterLayer(uri, "Basemap.at", "wms"))
+        #add only if layer basemap.at does not exist
+        if len(QgsProject.instance().mapLayersByName("Basemap.at")) == 0:
+            uri = "crs=EPSG:3857&dpiMode=7&featureCount=10&format=image/jpeg&layers=bmaphidpi&styles=normal&tileMatrixSet=google3857&tilePixelRatio=0&url=https://mapsneu.wien.gv.at/basemapneu/1.0.0/WMTSCapabilities.xml"
+            QgsProject.instance().addMapLayer(QgsRasterLayer(uri, "Basemap.at", "wms"))
 
     #check if a necessary layer is removed by user
     def layer_removed(self,l):
@@ -167,7 +169,9 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             load_from_web = True
         else:
             with open(dataset_file, 'rb') as pkl:
-                self.datasets = pickle.load(pkl)
+                data = pickle.load(pkl)
+                self.datasets = data[0]
+                self.datasets_depricated = data[1]
             # load available datasets only when latest update is 1 months ago
             if (datetime.now() - self.datasets["latest_update"]) < timedelta(days = 30):
                 load_from_web = False
@@ -236,7 +240,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             
             #save dictionary as pickle file
             with open(dataset_file, 'wb') as pkl:
-                pickle.dump(self.datasets, pkl, protocol=pickle.HIGHEST_PROTOCOL)
+                pickle.dump([self.datasets, self.datasets_depricated], pkl, protocol=pickle.HIGHEST_PROTOCOL)
 
         del self.datasets["latest_update"]
         #update 'typ' combobox
@@ -528,7 +532,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.table_stations.setColumnCount(2)
         
             for i in range(len(station_ids)):
-                if station_ids[i] not in self.station_list:
+                if str(station_ids[i]) not in self.station_list:
                     current_len = self.table_stations.rowCount()
                     self.station_list.append(str(station_ids[i]))
                     self.table_stations.setRowCount(current_len + 1)
