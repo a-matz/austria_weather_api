@@ -223,7 +223,7 @@ class GeosphereAPI:
             self.dockwidget.closingPlugin.connect(self.onClosePlugin)
             for dock in self.iface.mainWindow().findChildren(QDockWidget):
                 area = self.iface.mainWindow().dockWidgetArea(dock)
-                if area == Qt.RightDockWidgetArea:
+                if area == Qt.DockWidgetArea.RightDockWidgetArea:
                     if dock.isVisible():
                         if dock.windowTitle() in ("Layergestaltung","Verarbeitungswerkzeuge"):
                             self.iface.mainWindow().tabifyDockWidget(dock, self.dockwidget)
@@ -232,7 +232,7 @@ class GeosphereAPI:
                             self.dockwidget.raise_()
                             return
                             
-                self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
+                self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dockwidget)
 
             # connect to provide cleanup on closing of dockwidget
 

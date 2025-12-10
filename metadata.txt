@@ -5,8 +5,9 @@
 [general]
 name=Austria Weather API
 qgisMinimumVersion=3.28
+qgisMaximumVersion=4.99
 description=QGis connection to Geosphere Austria API
-version=0.7
+version=1.0
 author=Armin Matzl
 email=arminmatzl@gmail.com
 
@@ -45,3 +46,4 @@ Category of the plugin: Raster, Vector, Database or Web
 # If the plugin can run on QGIS Server.
 server=False
 
+supportsQt6=True

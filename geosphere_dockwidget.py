@@ -54,12 +54,8 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def __init__(self,iface, parent=None):
         """Constructor."""
         super(GeosphereAPIDockWidget, self).__init__(parent)
-        # Set up the user interface from Designer.
-        # After setupUI you can access any designer object by doing
-        # self.<objectname>, and you can use autoconnect slots - see
-        # http://doc.qt.io/qt-5/designer-using-a-ui-file.html
-        # #widgets-and-dialogs-with-auto-
-        self.setCursor(Qt.WaitCursor)
+        
+        self.setCursor(Qt.CursorShape.WaitCursor)
         self.iface = iface
         self.setupUi(self)
         self.combobox_typ.currentIndexChanged.connect(self.update_modus)
@@ -99,15 +95,15 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         
         self.station_list = []
 
-        self.start_time.setTimeSpec(Qt.UTC)
-        self.end_time.setTimeSpec(Qt.UTC)
+        self.start_time.setTimeSpec(Qt.TimeSpec.UTC)
+        self.end_time.setTimeSpec(Qt.TimeSpec.UTC)
 
         self.nwm = QgsNetworkAccessManager.instance()
         #separate grid widget for forecast times, hide at startup
         self.forecast_time_grid.setVisible(False)
 
         self.load_datasets()
-        self.setCursor(Qt.ArrowCursor)
+        self.setCursor(Qt.CursorShape.ArrowCursor)
 
     def closeEvent(self, event):
         self.closingPlugin.emit()
@@ -184,7 +180,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
             # creat window with progressbar
             prog = QProgressDialog(self.tr("Start Plugin\nLoad available datasets ..."),None, 0, len(request))
-            prog.setWindowModality(Qt.WindowModal)
+            prog.setWindowModality(Qt.WindowModality.WindowModal)
                 
             self.datasets = {}
             #some datasets require login, determine accessible datasets
@@ -268,7 +264,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.reset_ui()
             # textcolor of depricated datasets = grey
             for idx in self.datasets_depricated[self.combobox_typ.currentText()][self.combobox_modus.currentText()]:
-                self.combobox_id.setItemData(idx, QtGui.QBrush(Qt.gray), Qt.TextColorRole)
+                self.combobox_id.setItemData(idx, QtGui.QBrush(QtGui.QColor("gray")), Qt.ItemDataRole.ForegroundRole)
             
 
     #reset ui objects when combobox type or mode is changed
@@ -398,8 +394,8 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.forecast_time_combobox.addItems(self.current_metadata["available_forecast_reftimes"])
 
         else: #self.current_metadata["mode"] != "current":
-            strt_date = QDateTime.fromString(self.current_metadata["start_time"], Qt.ISODate)
-            end_date = QDateTime.fromString(self.current_metadata["end_time"], Qt.ISODate)
+            strt_date = QDateTime.fromString(self.current_metadata["start_time"], Qt.DateFormat.ISODate)
+            end_date = QDateTime.fromString(self.current_metadata["end_time"], Qt.DateFormat.ISODate)
             self.start_time.setMinimumDateTime(strt_date)
             self.end_time.setMinimumDateTime(strt_date)
             self.start_time.setMaximumDateTime(end_date)
@@ -431,10 +427,10 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 self.filewidget.setFilter("")
 
         if self.combobox_outformat.currentText() == "netcdf":
-            self.checkbox_addLayer.setCheckState(True)
+            self.checkbox_addLayer.setCheckState(Qt.CheckState.Checked)
             self.checkbox_addLayer.setTristate(False)
         else:
-            self.checkbox_addLayer.setCheckState(False)            
+            self.checkbox_addLayer.setCheckState(Qt.CheckState.Checked)            
 
     #load all available stations to canvas
     def load_stations_to_canvas(self):
@@ -537,11 +533,11 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     self.station_list.append(str(station_ids[i]))
                     self.table_stations.setRowCount(current_len + 1)
                     item_id = QTableWidgetItem()
-                    item_id.setData(Qt.DisplayRole, station_ids[i])
+                    item_id.setData(Qt.ItemDataRole.DisplayRole, station_ids[i])
                     self.table_stations.setItem(current_len,0,item_id)
 
                     item_name = QTableWidgetItem()
-                    item_name.setData(Qt.DisplayRole, station_names[i])
+                    item_name.setData(Qt.ItemDataRole.DisplayRole, station_names[i])
                     self.table_stations.setItem(current_len,1,item_name)
             
             self.table_stations.setHorizontalHeaderLabels(["id","name"])
@@ -597,7 +593,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         #read available parameters from metadata
         data = pd.DataFrame.from_dict(self.current_metadata["parameters"])
 
-        self.setCursor(Qt.WaitCursor)
+        self.setCursor(Qt.CursorShape.WaitCursor)
         
         #clear table, add all parameters to table
         self.table_parameters.clear()
@@ -616,7 +612,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 if value != None and not pd.isnull(value):
                     item = QTableWidgetItem()
      
-                    item.setData(Qt.DisplayRole, value)
+                    item.setData(Qt.ItemDataRole.DisplayRole, value)
                     self.table_parameters.setItem(i,col+1,item)
 
         header = [""] # no header for checkbox
@@ -625,7 +621,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.table_parameters.resizeColumnsToContents()
         self.table_parameters.setSortingEnabled(True)
 
-        self.setCursor(Qt.ArrowCursor)
+        self.setCursor(Qt.CursorShape.ArrowCursor)
 
     #filter the parameter table, called when text in qlineedit is changed
     def filter_parameter_table(self):
@@ -641,14 +637,14 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     #unselect all parameters in table
     def unselect_all_parameters(self):
         for row in range(self.table_parameters.rowCount()):
-            self.table_parameters.cellWidget(row,0).setCheckState(False)
+            self.table_parameters.cellWidget(row,0).setCheckState(Qt.CheckState.Unchecked)
             self.selected_parameters = []
 
     #select all parameters in current view
     def select_all_parameters(self):
         for row in range(self.table_parameters.rowCount()):
             if not self.table_parameters.isRowHidden(row):
-                self.table_parameters.cellWidget(row,0).setCheckState(True)
+                self.table_parameters.cellWidget(row,0).setCheckState(Qt.CheckState.Checked)
                 self.table_parameters.cellWidget(row,0).setTristate(False)
                 self.selected_parameters.append(self.table_parameters.item(row,1).text())
 
@@ -689,15 +685,15 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         for i,feat in enumerate(self.point_layer.getFeatures()):
             #add lat
             item_lat = QTableWidgetItem()
-            item_lat.setData(Qt.DisplayRole, "%.10f" % feat.geometry().asPoint().y())
+            item_lat.setData(Qt.ItemDataRole.DisplayRole, "%.10f" % feat.geometry().asPoint().y())
             self.table_points.setItem(i,0,item_lat)
             #add lon
             item_lon = QTableWidgetItem()
-            item_lon.setData(Qt.DisplayRole, "%.10f" % feat.geometry().asPoint().x())
+            item_lon.setData(Qt.ItemDataRole.DisplayRole, "%.10f" % feat.geometry().asPoint().x())
             self.table_points.setItem(i,1,item_lon)
             #add id
             item_id = QTableWidgetItem()
-            item_id.setData(Qt.DisplayRole, feat.id())
+            item_id.setData(Qt.ItemDataRole.DisplayRole, feat.id())
             self.table_points.setItem(i,2,item_id)
         self.table_points.setHorizontalHeaderLabels(["Lat","Lon","id"])
         self.table_points.setColumnHidden(2, True)
@@ -778,7 +774,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         if not os.path.isdir(os.path.dirname(self.filewidget.filePath())):
             QMessageBox.warning(self,self.tr("Missing filepath"),self.tr("Define storage location."))
             return
-        self.setCursor(Qt.WaitCursor)
+        self.setCursor(Qt.CursorShape.WaitCursor)
         parameter = ",".join(self.selected_parameters)
         if self.current_metadata["mode"] != "forecast":
             strt = self.start_time.dateTime().toString("yyyy-MM-ddThh:mm")
@@ -789,9 +785,9 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         #check date input
         if strt == end and self.current_metadata["mode"] != "current":
-            message_accepted =QMessageBox.warning(self,self.tr("Warning"),self.tr("Start and end date are ident.\nDo you want to continue"), QMessageBox.Yes|QMessageBox.No)
-            if message_accepted ==  QMessageBox.No:
-                self.setCursor(Qt.ArrowCursor)
+            message_accepted =QMessageBox.warning(self,self.tr("Warning"),self.tr("Start and end date are ident.\nDo you want to continue"), QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No)
+            if message_accepted ==  QMessageBox.StandardButton.No:
+                self.setCursor(Qt.CursorShape.ArrowCursor)
                 return
         #check selected format and filepath
         extension = os.path.splitext(self.filewidget.filePath())[1].replace(".","")
@@ -799,9 +795,9 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         if ((out_format == "csv" and extension != "csv") or \
             (out_format == "geojson" and (extension not in ("json","geojson"))) or \
             (out_format == "netcdf" and extension != "nc")):
-            message_accepted =QMessageBox.warning(self,self.tr("Warning"),self.tr("File extension does not match selected output format.\nDo you want to continue?"), QMessageBox.Yes|QMessageBox.No)
-            if message_accepted == QMessageBox.No:
-                self.setCursor(Qt.ArrowCursor)
+            message_accepted =QMessageBox.warning(self,self.tr("Warning"),self.tr("File extension does not match selected output format.\nDo you want to continue?"), QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No)
+            if message_accepted == QMessageBox.StandardButton.No:
+                self.setCursor(Qt.CursorShape.ArrowCursor)
                 return
         
         # if mode is forecast define offset (reference time)
@@ -850,7 +846,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 self.point_layer.id()
             except:
                 QMessageBox.warning(self,self.tr("Error"),self.tr("Download failed.\nDefine points on map."))
-                self.setCursor(Qt.ArrowCursor)
+                self.setCursor(Qt.CursorShape.ArrowCursor)
                 return
             if self.point_layer.isEditable():
                 self.point_layer.commitChanges()
@@ -870,7 +866,8 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             lat_lon={points}&{offset_txt}output_format={self.combobox_outformat.currentText()}".replace(" ","")
         response = self.get_request(url)
         print(url)
-        if response.error() == 0:
+
+        if response.error().value == 0:
             content = response.content().data()
             if self.combobox_outformat.currentText() == "csv":
                 content = content.replace(b",",b";").replace(b".",b",")
@@ -882,7 +879,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 return
         else:
             QMessageBox.warning(self,self.tr("Error"),self.tr(f"Download failed.\nCheck input variables..\nIf input variables are correct the dataset may be too large."))
-            self.setCursor(Qt.ArrowCursor)
+            self.setCursor(Qt.CursorShape.ArrowCursor)
             return
 
         path = self.filewidget.filePath().replace("\\","/")
@@ -902,7 +899,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             if layer.isValid:
                 QgsProject.instance().addMapLayer(layer)
 
-        self.setCursor(Qt.ArrowCursor)
+        self.setCursor(Qt.CursorShape.ArrowCursor)
         self.iface.messageBar().pushSuccess(self.tr("Download finished"), f"File successfully saved in  <a href= '{os.path.dirname(path)}'> {path}  </a>")
     
     def load_geojson(self, json_path, layer_name):
