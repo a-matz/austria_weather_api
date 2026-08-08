@@ -25,15 +25,15 @@
 import os
 
 from qgis.PyQt import QtGui, QtWidgets, uic
-from qgis.PyQt.QtCore import Qt, QSignalBlocker, QVariant, pyqtSignal, QTranslator, QCoreApplication, QDateTime, QUrl
-from qgis.PyQt.QtWidgets import QProgressBar, QDialog, QGridLayout, QProgressDialog, QMessageBox, QTableWidgetItem, QCheckBox, QLineEdit
+from qgis.PyQt.QtCore import Qt, QSignalBlocker, QVariant, pyqtSignal, QCoreApplication, QDateTime, QUrl
+from qgis.PyQt.QtWidgets import QProgressDialog, QMessageBox, QTableWidgetItem, QCheckBox, QLineEdit
 import processing
 from qgis.PyQt.QtNetwork import QNetworkRequest
-from qgis.core import (QgsMapLayerProxyModel, QgsGeometry, 
-                      QgsProject, QgsFeature, QgsPoint, edit, QgsVectorLayer, QgsMeshLayer, QgsRasterLayer, QgsRenderContext,
+from qgis.core import (QgsGeometry, 
+                      QgsProject, QgsFeature, QgsPoint, edit, QgsVectorLayer, QgsMeshLayer, QgsRasterLayer,
                       QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsField, QgsPointXY,
                       QgsProcessing, Qgis, NULL, QgsNetworkAccessManager)
-from qgis.gui import QgsMapToolExtent, QgsMapToolPan, QgsMapToolEmitPoint, QgsMessageBar
+from qgis.gui import QgsMapToolExtent, QgsMapToolPan, QgsMapToolEmitPoint
 import pandas as pd
 import json
 import time
@@ -986,8 +986,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         resolution = self.current_metadata["spatial_resolution_m"]
         qml = os.path.abspath(os.path.join(os.path.dirname(__file__),"layer_style","grid_boundary.qml"))
         layer.loadNamedStyle(qml)
-        #layer.renderer().symbols(QgsRenderContext())[1].symbolLayer(0).setDistance(resolution)
-        #layer.renderer().symbols(QgsRenderContext())[1].symbolLayer(1).setDistance(resolution)
+
         try:
             QgsProject.instance().removeMapLayer(self.current_grid_layer)
         except:
