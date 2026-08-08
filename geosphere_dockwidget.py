@@ -110,7 +110,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             QgsProject.instance().removeMapLayer(self.point_layer)
             self.iface.mapCanvas().refresh()
         except:
-            print("could not remove layer")
+            _ = None
         event.accept()
     
     def tr(self, message):
@@ -201,7 +201,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     
                     #self.datasets.append(key)
                 except:
-                    print("Metadata not awailable")
+                    _ = None
                     #login required, skip dataset
                     
             
@@ -314,12 +314,12 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         try:
             del self.current_layer
         except:
-            print("could not delete layer")
+            _ = None
         try:
             QgsProject.instance().removeMapLayer(self.point_layer)
             self.iface.mapCanvas().refresh()
         except:
-            print("could not delete layer")
+            _ = None
 
     #load metadata from selected datapoint
     def load_metadata(self):
@@ -758,7 +758,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     self.point_layer.deleteFeature(feat.id())
             self.point_layer.setReadOnly(True)
         except:
-            print("could not delete layer")
+            _ = None
 
     def delete_selected_ts_points(self):
         try:
@@ -769,7 +769,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     self.point_layer.deleteFeature(feat.id())
             self.point_layer.setReadOnly(True)
         except:
-            print("could not delete layer")
+            _ = None
 
     #download data
     def download(self):
@@ -991,7 +991,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         try:
             QgsProject.instance().removeMapLayer(self.current_grid_layer)
         except:
-            print("could not remove layer")
+            _ = None
         self.current_grid_layer = QgsProject.instance().addMapLayer(layer)
         
                 
