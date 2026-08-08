@@ -201,7 +201,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     
                     #self.datasets.append(key)
                 except:
-
+                    print("Metadata not awailable")
                     #login required, skip dataset
                     
             
