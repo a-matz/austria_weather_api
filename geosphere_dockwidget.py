@@ -239,7 +239,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 "datasets" : self.datasets,
                 "datasets_depricated" : self.datasets_depricated
             }
-            print(save_dict)
+
             with open(dataset_file, "w", encoding="utf-8") as f:
                 json.dump(save_dict, f, ensure_ascii=False, indent=2)
             #with open(dataset_file, 'wb') as pkl:
