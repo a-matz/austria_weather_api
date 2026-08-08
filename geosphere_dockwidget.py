@@ -232,11 +232,18 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     # filter index of depricated datasets, 
                     self.datasets_depricated[ds_typ][ds_mode] = idx_depricated[~idx_depricated].index.to_list()
 
-            self.datasets["latest_update"] = datetime.now()
+            self.datasets["latest_update"] = datetime.now().isoformat()
             
             #save dictionary as pickle file
-            with open(dataset_file, 'wb') as pkl:
-                pickle.dump([self.datasets, self.datasets_depricated], pkl, protocol=pickle.HIGHEST_PROTOCOL)
+            save_dict = {
+                "datasets" : self.datasets,
+                "datasets_depricated" : self.datasets_depricated
+            }
+            print(save_dict)
+            with open(dataset_file, "w", encoding="utf-8") as f:
+                json.dump(save_dict, f, ensure_ascii=False, indent=2)
+            #with open(dataset_file, 'wb') as pkl:
+            #    pickle.dump([self.datasets, self.datasets_depricated], pkl, protocol=pickle.HIGHEST_PROTOCOL)
 
         del self.datasets["latest_update"]
         #update 'typ' combobox
