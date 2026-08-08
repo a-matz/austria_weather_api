@@ -21,9 +21,9 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt, QSettings
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QDockWidget 
+from qgis.PyQt.QtWidgets import QAction, QDockWidget
 # Initialize Qt resources from file resources.py
 from .resources import *
 
@@ -88,18 +88,17 @@ class GeosphereAPI:
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('AustriaWeatherAPI', message)
 
-
     def add_action(
-        self,
-        icon_path,
-        text,
-        callback,
-        enabled_flag=True,
-        add_to_menu=True,
-        add_to_toolbar=True,
-        status_tip=None,
-        whats_this=None,
-        parent=None):
+            self,
+            icon_path,
+            text,
+            callback,
+            enabled_flag=True,
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip=None,
+            whats_this=None,
+            parent=None):
         """Add a toolbar icon to the toolbar.
 
         :param icon_path: Path to the icon for this action. Can be a resource
@@ -162,7 +161,6 @@ class GeosphereAPI:
 
         return action
 
-
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
@@ -178,8 +176,6 @@ class GeosphereAPI:
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin dockwidget is closed"""
 
-        #print "** CLOSING GeosphereAPI"
-
         # disconnects
         self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
 
@@ -191,11 +187,8 @@ class GeosphereAPI:
 
         self.pluginIsActive = False
 
-
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
-
-        #print "** UNLOAD GeosphereAPI"
 
         for action in self.actions:
             self.iface.removePluginMenu(
@@ -212,12 +205,10 @@ class GeosphereAPI:
         if not self.pluginIsActive:
             self.pluginIsActive = True
 
-            #print "** STARTING GeosphereAPI"
-
             # dockwidget may not exist if:
             #    first run of plugin
             #    removed on close (see self.onClosePlugin method)
-            if self.dockwidget == None:
+            if self.dockwidget is None:
                 # Create the dockwidget (after translation) and keep reference
                 self.dockwidget = GeosphereAPIDockWidget(self.iface)
             self.dockwidget.closingPlugin.connect(self.onClosePlugin)
@@ -225,13 +216,13 @@ class GeosphereAPI:
                 area = self.iface.mainWindow().dockWidgetArea(dock)
                 if area == Qt.DockWidgetArea.RightDockWidgetArea:
                     if dock.isVisible():
-                        if dock.windowTitle() in ("Layergestaltung","Verarbeitungswerkzeuge"):
+                        if dock.windowTitle() in ("Layergestaltung", "Verarbeitungswerkzeuge"):
                             self.iface.mainWindow().tabifyDockWidget(dock, self.dockwidget)
                             self.dockwidget.show()
                             self.dockwidget.setVisible(True)
                             self.dockwidget.raise_()
                             return
-                            
+    
                 self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dockwidget)
 
             # connect to provide cleanup on closing of dockwidget
