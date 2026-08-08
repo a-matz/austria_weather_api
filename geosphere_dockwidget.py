@@ -35,7 +35,6 @@ from qgis.core import (QgsMapLayerProxyModel, QgsGeometry,
                       QgsProcessing, Qgis, NULL, QgsNetworkAccessManager)
 from qgis.gui import QgsMapToolExtent, QgsMapToolPan, QgsMapToolEmitPoint, QgsMessageBar
 import pandas as pd
-import pickle
 import json
 import time
 from datetime import datetime,timedelta
@@ -111,7 +110,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             QgsProject.instance().removeMapLayer(self.point_layer)
             self.iface.mapCanvas().refresh()
         except:
-            pass
+            print("could not remove layer")
         event.accept()
     
     def tr(self, message):
@@ -130,7 +129,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.current_layer.id()
         except:
             self.button_select.setEnabled(False)
-            if self.iface.mapCanvas().mapTool() != None:
+            if self.iface.mapCanvas().mapTool() is not None:
                 if self.iface.mapCanvas().mapTool().toolName() == "geosphere_api_select":
                     self.iface.mapCanvas().setMapTool(QgsMapToolPan(self.iface.mapCanvas()))
         try:
@@ -139,7 +138,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.table_points.clear()
             self.table_points.setColumnCount(0)
             self.table_points.setRowCount(0)
-            if self.iface.mapCanvas().mapTool() != None:
+            if self.iface.mapCanvas().mapTool() is not None:
                 if self.iface.mapCanvas().mapTool().toolName() == "geosphere_api_pointTool":
                     self.iface.mapCanvas().setMapTool(QgsMapToolPan(self.iface.mapCanvas()))
 
@@ -202,8 +201,9 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     
                     #self.datasets.append(key)
                 except:
+
                     #login required, skip dataset
-                    pass
+                    
             
             # some datasets have new versions
             # example: spartacus-v1-1m-1km --> spartacus-v2-1m-1km
@@ -303,7 +303,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.parameter_filter.setText("")
         
         #reset maptool
-        if self.iface.mapCanvas().mapTool() != None:
+        if self.iface.mapCanvas().mapTool() is not None:
             if self.iface.mapCanvas().mapTool().toolName() == "geosphere_api_pointTool":
                 self.iface.mapCanvas().setMapTool(QgsMapToolPan(self.iface.mapCanvas()))
 
@@ -314,12 +314,12 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         try:
             del self.current_layer
         except:
-            pass
+            print("could not delete layer")
         try:
             QgsProject.instance().removeMapLayer(self.point_layer)
             self.iface.mapCanvas().refresh()
         except:
-            pass
+            print("could not delete layer")
 
     #load metadata from selected datapoint
     def load_metadata(self):
@@ -587,7 +587,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     #method to get sorted list with unique values
     def unique(self,liste,sort = None):
         lst = list(set(liste))
-        if sort == None:
+        if sort is None:
             return lst
         elif sort == "ascending":
             return lst.sort()
@@ -616,7 +616,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             self.table_parameters.setCellWidget(i, 0, select)
 
             for col,value in enumerate(row):
-                if value != None and not pd.isnull(value):
+                if value is not None and not pd.isnull(value):
                     item = QTableWidgetItem()
      
                     item.setData(Qt.ItemDataRole.DisplayRole, value)
@@ -661,7 +661,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             pkt = QgsGeometry(QgsPoint(point))
         else:
             pkt = point
-        if crs == None:
+        if crs is None:
             sourceCrs = QgsProject.instance().crs()
         else:
             sourceCrs = crs
@@ -718,7 +718,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def load_points_from_layer(self):            
         layer = self.combobox_pointlayer.currentLayer()
-        if layer != None:
+        if layer is not None:
             if self.checkbox_onlySelected.isChecked():
                 features = layer.selectedFeatures()
             else:
@@ -746,7 +746,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     
     #when editing is startet change tool, creating point throws error when used in editing mode
     def check_point_select_tool(self):
-        if self.iface.mapCanvas().mapTool() != None:
+        if self.iface.mapCanvas().mapTool() is not None:
             if self.iface.mapCanvas().mapTool().toolName() == "geosphere_api_pointTool":
                 self.iface.mapCanvas().setMapTool(QgsMapToolPan(self.iface.mapCanvas()))
     
@@ -758,7 +758,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     self.point_layer.deleteFeature(feat.id())
             self.point_layer.setReadOnly(True)
         except:
-            pass
+            print("could not delete layer")
 
     def delete_selected_ts_points(self):
         try:
@@ -769,7 +769,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                     self.point_layer.deleteFeature(feat.id())
             self.point_layer.setReadOnly(True)
         except:
-            pass
+            print("could not delete layer")
 
     #download data
     def download(self):
@@ -991,7 +991,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         try:
             QgsProject.instance().removeMapLayer(self.current_grid_layer)
         except:
-            pass
+            print("could not remove layer")
         self.current_grid_layer = QgsProject.instance().addMapLayer(layer)
         
                 
