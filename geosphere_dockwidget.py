@@ -157,19 +157,19 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def load_datasets(self):
         """
         load available datasets, called when plugin is started
-        save dictionary with available datasets to 'geosphere_datasets.pkl' in plugin directory
+        save dictionary with available datasets to 'geosphere_datasets.json' in plugin directory
         refresh dictionary only if latest update is older than 1 month
         """
-        dataset_file = os.path.join(os.path.dirname(__file__),"geosphere_datasets.pkl")
+        dataset_file = os.path.join(os.path.dirname(__file__),"geosphere_datasets.json")
         if not os.path.isfile(dataset_file):
             load_from_web = True
         else:
-            with open(dataset_file, 'rb') as pkl:
-                data = pickle.load(pkl)
-                self.datasets = data[0]
-                self.datasets_depricated = data[1]
+            with open(dataset_file, 'r', encoding="utf-8") as f:
+                data = json.load(f)
+                self.datasets = data["datasets"]
+                self.datasets_depricated = data["datasets_depricated"]
             # load available datasets only when latest update is 1 months ago
-            if (datetime.now() - self.datasets["latest_update"]) < timedelta(days = 30):
+            if (datetime.now() - datetime.fromisoformat(self.datasets["latest_update"])) < timedelta(days = 30):
                 load_from_web = False
             else:
                 load_from_web = True
