@@ -73,7 +73,7 @@ class GeosphereAPIDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.button_selectAll.clicked.connect(self.select_all_parameters)
         self.button_addBasemap.clicked.connect(self.add_basemap)
         self.parameter_filter.textEdited.connect(self.filter_parameter_table)
-        self.combobox_pointlayer.setFilters(QgsMapLayerProxyModel.Filters.PointLayer)
+        self.combobox_pointlayer.setFilters(Qgis.LayerFilter.PointLayer)
         self.button_loadPoints.clicked.connect(self.load_points_from_layer)
         #define select by rectangle tool
         self.select_tool = QgsMapToolExtent(self.iface.mapCanvas())
